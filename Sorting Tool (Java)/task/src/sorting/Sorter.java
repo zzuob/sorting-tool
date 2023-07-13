@@ -42,7 +42,7 @@ public class Sorter {
             } else if (object1 instanceof Long && object2 instanceof Long) {
                 return ((Long) object1).compareTo((Long) object2);
             } else {
-                throw new RuntimeException("Objects in AlphanumericObjectComparator must be of same class");
+                throw new RuntimeException("Objects in AlphanumericObjectComparator must be of same class (String or Long)");
             }
         }
     }

@@ -1,5 +1,6 @@
 package sorting;
 
+import java.io.*;
 import java.util.*;
 
 public class Main {
@@ -11,6 +12,7 @@ public class Main {
     static Scanner scan = new Scanner(System.in);
     static Mode mode = Mode.LINE;
     static Type type = Type.NATURAL;
+    static File outFile = null;
 
 
     private static boolean getLoopCondition() {
@@ -74,6 +76,30 @@ public class Main {
                             appendErrorMessage("No data type defined!", errorMessage);
                         }
                     }
+                    case "-INPUTFILE" -> {
+                        if (i != args.length - 1) {
+                            File inFile = new File(args[i+1]);
+                            try {
+                                scan = new Scanner(inFile);
+                            } catch (FileNotFoundException e) {
+                                appendErrorMessage("Input file not found!", errorMessage);
+                            }
+                        } else {
+                            appendErrorMessage("No input file defined!", errorMessage);
+                        }
+                    }
+                    case "-OUTPUTFILE" -> {
+                        if (i != args.length - 1) {
+                            outFile = new File(args[i+1]);
+                            try {
+                                outFile.createNewFile();
+                            } catch (IOException e) {
+                                appendErrorMessage("Output file could not be opened!", errorMessage);
+                            }
+                        } else {
+                            appendErrorMessage("No output file defined!", errorMessage);
+                        }
+                    }
                     default -> System.out.println("\""+args[i]+"\" is not a valid parameter. It will be skipped.");
                 }
             }
@@ -91,18 +117,28 @@ public class Main {
                 case LINE -> "lines";
                 case WORD -> "words";
             };
-            System.out.printf("Total %s: %d\n", dataType, sorter.getTotalOccurrences());
+            StringBuilder output = new StringBuilder();
+            output.append(String.format("Total %s: %d\n", dataType, sorter.getTotalOccurrences()));
             if (type == Type.BYCOUNT) {
                 List<Object> result = sorter.sortByCount();
                 for (Object object : result) {
-                    System.out.println(sorter.getObjectStats(object));
+                    output.append((sorter.getObjectStats(object))).append("\n");
                 }
 
             } else {
                 List<Object> result = sorter.sortNaturally();
                 String spacing = Mode.LINE == mode ? "\n" : " ";
                 for (Object object : result) {
-                    System.out.print(object + spacing);
+                    output.append(object).append(spacing);
+                }
+            }
+            if (outFile == null) {
+                System.out.println(output); // print output to terminal
+            } else {
+                try (FileWriter writer = new FileWriter(outFile)) {
+                    writer.write(output.toString()); // write output to file
+                } catch (IOException e) {
+                    System.out.println("Output file could not be written to!");
                 }
             }
         } else {
