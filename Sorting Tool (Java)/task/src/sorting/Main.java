@@ -4,7 +4,7 @@ import java.util.*;
 
 public class Main {
 
-    enum Mode {LONG, LINE, WORD}
+    enum Mode {LONG, LINE, WORD, SORT_INTEGERS}
 
     static Scanner scan = new Scanner(System.in);
 
@@ -33,8 +33,8 @@ public class Main {
                 largestNumberRepeats++;
             }
         }
-        Collections.sort(allNumbers);
-        return new Object[]{numberOfIntegers, largestNumber, largestNumberRepeats, allNumbers};
+        String result = collectionToSortedString(allNumbers, " ");
+        return new Object[]{numberOfIntegers, largestNumber, largestNumberRepeats, result};
     }
 
     private static String collectionToSortedString(Set<String> set, String delimiter) {
@@ -44,6 +44,18 @@ public class Main {
         for (int i = 0; i < array.length; i++) {
             result.append(array[i]);
             if (i != array.length - 1) { // not last element
+                result.append(delimiter);
+            }
+        }
+        return result.toString();
+    }
+
+    private static String collectionToSortedString(List<Long> list, String delimiter) {
+        Collections.sort(list);
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            result.append(list.get(i));
+            if (i != list.size() - 1) { // not last element
                 result.append(delimiter);
             }
         }
@@ -100,35 +112,39 @@ public class Main {
         boolean sortIntegers = false;
         for (int i = 0; i < args.length; i++) {
             if ("-sortIntegers".equals(args[i])) {
-                //mode = Mode.SORT_INTEGERS;
+                mode = Mode.SORT_INTEGERS;
                 break;
-            }
-            if ("-dataType".equals(args[i]) && i != args.length - 1) {
+            } else if ("-dataType".equals(args[i]) && i != args.length - 1) {
                 String value = args[i+1].toUpperCase();
                 switch (value) {
                     case "LONG", "LINE", "WORD" -> mode = Mode.valueOf(value);
                 }
             }
         }
-        // { int frequency of data, (Object) the largest occurrence, int number of repeats }
+        // { (int) frequency of data, (Object) the largest occurrence, (int) number of repeats, (optional) sorted data }
         Object[] result = switch (mode) {
-            case LONG -> longCount();
+            case LONG, SORT_INTEGERS -> longCount();
             case LINE -> lineCount();
             case WORD -> wordCount();
         };
         String type = switch (mode) {
-            case LONG -> "number";
+            case LONG, SORT_INTEGERS -> "number";
             case LINE -> "line";
             case WORD -> "word";
         };
         String max = switch (mode) {
-            case LONG -> "greatest";
+            case LONG, SORT_INTEGERS -> "greatest";
             case LINE,WORD -> "longest";
         };
         String spacing = Mode.LINE == mode ? "\n" : " ";
         double percentage = percentageOccurrences((Integer) result[2], (Integer) result[0]);
         String occurrences = String.format("(%d time(s), %d%%).", (Integer) result[2], Math.round(percentage));
         System.out.println("Total "+type+"s: "+result[0]);
-        System.out.println("The greatest "+type+":"+spacing+result[1]+spacing+occurrences);
+        if (mode == Mode.SORT_INTEGERS) {
+            System.out.println("Sorted data: "+result[3]);
+        } else {
+            System.out.println("The "+max+" "+type+":"+spacing+result[1]+spacing+occurrences);
+        }
+
     }
 }
