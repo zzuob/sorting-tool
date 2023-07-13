@@ -5,7 +5,7 @@ import java.util.*;
 public class Main {
 
     enum Mode {LONG, LINE, WORD}
-    enum Type {NATURAL, BY_COUNT}
+    enum Type {NATURAL, BYCOUNT}
 
 
     static Scanner scan = new Scanner(System.in);
@@ -23,49 +23,90 @@ public class Main {
     public static List<Object> getDataSet() {
         List<Object> allData = new ArrayList<>();
         while (getLoopCondition()) {
-            Object data = switch (mode) {
-                case LONG -> scan.nextLong();
-                case LINE -> scan.nextLine();
-                case WORD -> scan.next();
-            };
+            Object data = null;
+            switch (mode) {
+                case LONG -> {
+                    String nextData = scan.next();
+                    if (nextData.matches("-?\\d+")) {
+                        data = Long.parseLong(nextData);
+                    } else {
+                        System.out.println("\""+nextData+"\" is not a long. It will be skipped.");
+                    }
+                }
+                case LINE -> data = scan.nextLine();
+                case WORD -> data = scan.next();
+            }
             allData.add(data);
         }
         return allData;
     }
 
-    public static void main(final String[] args) {
+    private static void appendErrorMessage(String text, StringBuilder errorMessage) {
+        if (!errorMessage.isEmpty()) {
+            errorMessage.append("\n");
+        }
+        errorMessage.append(text);
+    }
+    private static String validateArgs(String[] args) {
+        StringBuilder errorMessage  = new StringBuilder();
         for (int i = 0; i < args.length; i++) {
-            if ("-sortingType".equals(args[i]) && i != args.length - 1) {
-                if ("byCount".equalsIgnoreCase(args[i + 1])) {
-                    type = Type.BY_COUNT;
-                }
-            } else if ("-dataType".equals(args[i]) && i != args.length - 1) {
-                String value = args[i+1].toUpperCase();
-                switch (value) {
-                    case "LONG", "LINE", "WORD" -> mode = Mode.valueOf(value);
+            if (args[i].startsWith("-")) {
+                switch (args[i].toUpperCase()) {
+                    case "-SORTINGTYPE" -> {
+                        if (i != args.length - 1) {
+                            String value = args[i+1].toUpperCase();
+                            switch (value) {
+                                case "NATURAL", "BYCOUNT" -> type = Type.valueOf(value);
+                                default -> appendErrorMessage("No sorting type defined!", errorMessage);
+                            }
+                        } else {
+                            appendErrorMessage("No sorting type defined!", errorMessage);
+                        }
+                    }
+                    case "-DATATYPE" -> {
+                        if (i != args.length - 1) {
+                            String value = args[i+1].toUpperCase();
+                            switch (value) {
+                                case "LONG", "LINE", "WORD" -> mode = Mode.valueOf(value);
+                                default -> appendErrorMessage("No data type defined!", errorMessage);
+                            }
+                        } else {
+                            appendErrorMessage("No data type defined!", errorMessage);
+                        }
+                    }
+                    default -> System.out.println("\""+args[i]+"\" is not a valid parameter. It will be skipped.");
                 }
             }
         }
-        List<Object> allData = getDataSet();
-        Sorter sorter = new Sorter(allData);
-        String dataType = switch (mode) {
-            case LONG -> "numbers";
-            case LINE -> "lines";
-            case WORD -> "words";
-        };
-        System.out.printf("Total %s: %d\n", dataType, sorter.getTotalOccurrences());
-        if (type == Type.BY_COUNT) {
-            List<Object> result = sorter.sortByCount();
-            for (Object object: result) {
-                System.out.println(sorter.getObjectStats(object));
-            }
+        return errorMessage.toString();
+    }
 
-        } else {
-            List<Object> result = sorter.sortNaturally();
-            String spacing = Mode.LINE == mode ? "\n" : " ";
-            for (Object object: result) {
-                System.out.print(object+spacing);
+    public static void main(final String[] args) {
+        String errorMessage  = validateArgs(args);
+        if ("".equals(errorMessage)) {
+            List<Object> allData = getDataSet();
+            Sorter sorter = new Sorter(allData);
+            String dataType = switch (mode) {
+                case LONG -> "numbers";
+                case LINE -> "lines";
+                case WORD -> "words";
+            };
+            System.out.printf("Total %s: %d\n", dataType, sorter.getTotalOccurrences());
+            if (type == Type.BYCOUNT) {
+                List<Object> result = sorter.sortByCount();
+                for (Object object : result) {
+                    System.out.println(sorter.getObjectStats(object));
+                }
+
+            } else {
+                List<Object> result = sorter.sortNaturally();
+                String spacing = Mode.LINE == mode ? "\n" : " ";
+                for (Object object : result) {
+                    System.out.print(object + spacing);
+                }
             }
+        } else {
+            System.out.println(errorMessage);
         }
     }
 }
