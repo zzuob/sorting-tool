@@ -4,13 +4,15 @@ import java.util.*;
 
 public class Main {
 
-    enum Mode {LONG, LINE, WORD, SORT_INTEGERS}
+    enum Mode {LONG, LINE, WORD}
+    enum Type {NATURAL, BY_COUNT}
+
 
     static Scanner scan = new Scanner(System.in);
+    static Mode mode = Mode.LINE;
+    static Type type = Type.NATURAL;
 
-    public static double percentageOccurrences(int repeats, int total) {
-        return ((double)repeats/total)*100;
-    }
+    @Deprecated
     public static Object[] longCount() {
         // get number of integers, the largest integer, and it's total occurrences from input
         int numberOfIntegers = 0;
@@ -37,6 +39,7 @@ public class Main {
         return new Object[]{numberOfIntegers, largestNumber, largestNumberRepeats, result};
     }
 
+    @Deprecated
     private static String collectionToSortedString(Set<String> set, String delimiter) {
         String[] array = set.toArray(new String[0]);
         Arrays.sort(array);
@@ -50,6 +53,7 @@ public class Main {
         return result.toString();
     }
 
+    @Deprecated
     private static String collectionToSortedString(List<Long> list, String delimiter) {
         Collections.sort(list);
         StringBuilder result = new StringBuilder();
@@ -62,11 +66,13 @@ public class Main {
         return result.toString();
     }
 
+    @Deprecated
     public static Object[] lineCount() {
         // get number of lines, the longest line(s) and their total occurrences from input
         int numberOfLines = 0;
         String longestLine = "";
         Set<String> longestLines = new HashSet<>();
+        List<String> allLines = new ArrayList<>();
         int longestLineRepeats = 0;
         while (scan.hasNextLine()) {
             String line = scan.nextLine();
@@ -85,6 +91,7 @@ public class Main {
         return new Object[]{numberOfLines, result, longestLineRepeats};
     }
 
+    @Deprecated
     public static Object[] wordCount() {
         // get number of words, the longest word(s) and their total occurrences from input
         int numberOfWords = 0;
@@ -107,13 +114,33 @@ public class Main {
         String result = collectionToSortedString(longestWords, " ");
         return new Object[]{numberOfWords, result, longestWordRepeats};
     }
+
+    private static boolean getLoopCondition() {
+        return switch (mode) {
+            case LONG -> scan.hasNextLong();
+            case LINE -> scan.hasNextLine();
+            case WORD -> scan.hasNext();
+        };
+    }
+    public static List<Object> getDataSet() {
+        List<Object> allData = new ArrayList<>();
+        while (getLoopCondition()) {
+            Object data = switch (mode) {
+                case LONG -> scan.nextLong();
+                case LINE -> scan.nextLine();
+                case WORD -> scan.next();
+            };
+            allData.add(data);
+        }
+        return allData;
+    }
+
     public static void main(final String[] args) {
-        Mode mode = Mode.WORD;
-        boolean sortIntegers = false;
         for (int i = 0; i < args.length; i++) {
-            if ("-sortIntegers".equals(args[i])) {
-                mode = Mode.SORT_INTEGERS;
-                break;
+            if ("-sortingType".equals(args[i]) && i != args.length - 1) {
+                if ("byCount".equalsIgnoreCase(args[i + 1])) {
+                    type = Type.BY_COUNT;
+                }
             } else if ("-dataType".equals(args[i]) && i != args.length - 1) {
                 String value = args[i+1].toUpperCase();
                 switch (value) {
@@ -121,30 +148,26 @@ public class Main {
                 }
             }
         }
-        // { (int) frequency of data, (Object) the largest occurrence, (int) number of repeats, (optional) sorted data }
-        Object[] result = switch (mode) {
-            case LONG, SORT_INTEGERS -> longCount();
-            case LINE -> lineCount();
-            case WORD -> wordCount();
+        List<Object> allData = getDataSet();
+        Sorter sorter = new Sorter(allData);
+        String dataType = switch (mode) {
+            case LONG -> "numbers";
+            case LINE -> "lines";
+            case WORD -> "words";
         };
-        String type = switch (mode) {
-            case LONG, SORT_INTEGERS -> "number";
-            case LINE -> "line";
-            case WORD -> "word";
-        };
-        String max = switch (mode) {
-            case LONG, SORT_INTEGERS -> "greatest";
-            case LINE,WORD -> "longest";
-        };
-        String spacing = Mode.LINE == mode ? "\n" : " ";
-        double percentage = percentageOccurrences((Integer) result[2], (Integer) result[0]);
-        String occurrences = String.format("(%d time(s), %d%%).", (Integer) result[2], Math.round(percentage));
-        System.out.println("Total "+type+"s: "+result[0]);
-        if (mode == Mode.SORT_INTEGERS) {
-            System.out.println("Sorted data: "+result[3]);
-        } else {
-            System.out.println("The "+max+" "+type+":"+spacing+result[1]+spacing+occurrences);
-        }
+        System.out.printf("Total %s: %d\n", dataType, sorter.getTotalOccurrences());
+        if (type == Type.BY_COUNT) {
+            List<Object> result = sorter.sortByCount();
+            for (Object object: result) {
+                System.out.println(sorter.getObjectStats(object));
+            }
 
+        } else {
+            List<Object> result = sorter.sortNaturally();
+            String spacing = Mode.LINE == mode ? "\n" : " ";
+            for (Object object: result) {
+                System.out.print(object+spacing);
+            }
+        }
     }
 }
